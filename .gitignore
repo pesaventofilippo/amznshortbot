@@ -1,8 +1,8 @@
 ### CUSTOM ###
-
 settings.json
 amznshortbot.db
 token.txt
+.idea/
 
 ### Linux ###
 *~
