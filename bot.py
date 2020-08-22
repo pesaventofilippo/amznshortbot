@@ -14,7 +14,29 @@ with open(join(dirname(abspath(__file__)), "settings.json")) as settings_file:
 bot = Bot(settings["token"])
 
 
+def expandUrl(url: str):
+    header = {
+        "Authorization": settings["bitlyAuth"],
+        "Content-Type": "application/json"
+    }
+    params = {
+        "bitlink_id": requote_uri(url)
+    }
+    try:
+        response = post("https://api-ssl.bitly.com/v4/expand", json=params, headers=header)
+        data = response.json()
+        long = data["long_url"]
+    except Exception:
+        long = url
+    return long
+
+
 def stripUrl(url: str):
+    # Extract full link
+    if "amzn.to" in url:
+        url = expandUrl(url)
+
+    # Remove extra tags
     tags = ["ref", "dchild", "keywords", "qid", "sr", "tag"]
     for tag in tags:
         tag_index = url.find(tag + "=")
@@ -32,6 +54,7 @@ def stripUrl(url: str):
                           url[(next_parameter_index + tag_index):]
             tag_index = url.find(tag + "=")
 
+    # Remove extra item description
     urlAmazonSplit = url.split("amazon.", 1)
     afterAmazonParts = urlAmazonSplit[1].split("/")
     nat = afterAmazonParts[0]
@@ -39,8 +62,8 @@ def stripUrl(url: str):
     while urlParts[0] != "dp":
         urlParts.pop(0)
 
-    url = f"amazon.{nat}/{'/'.join(urlParts)}?tag={settings['referral']}"
-    return url
+    # Rebuild url
+    return f"amazon.{nat}/{'/'.join(urlParts)}?tag={settings['referral']}"
 
 
 def shortUrl(url: str):
@@ -65,6 +88,24 @@ def shortUrl(url: str):
     return short
 
 
+def isAmazonUrl(url: str):
+    prefixList = [
+        "http://www.amazon.",
+        "https://www.amazon.",
+        "http://amazon.",
+        "https://amazon.",
+        "www.amazon.",
+        "amazon.",
+        "http://www.amzn.to",
+        "https://www.amazn.to",
+        "http://amzn.to",
+        "https://amzn.to",
+        "www.amzn.to",
+        "amzn.to"
+    ]
+    return url.startswith(tuple(prefixList))
+
+
 def reply(msg):
     chatId = msg['chat']['id']
     if "text" in msg:
@@ -74,49 +115,48 @@ def reply(msg):
     else:
         text = ""
 
-    if text.startswith("http://www.amazon.") or text.startswith("https://www.amazon.") or \
-        text.startswith("http://amazon.") or text.startswith("https://amazon.") or \
-        text.startswith("www.amazon.") or text.startswith("amazon."):
+    if isAmazonUrl(text):
         bot.sendMessage(chatId, shortUrl(text), disable_web_page_preview=True)
 
     else:
         longUrl = settings['exampleStartLink']
+        strippedUrl = stripUrl(longUrl)
+        shortedUrl = shortUrl(strippedUrl)
         bot.sendMessage(chatId, f"<b>Hi!</b> 👋\n"
                                 f"You can use me in any chat to short Amazon URLs before sending them.\n"
                                 f"Just type @amznshortbot in the text field, followed by the URL you want to send!\n\n"
                                 f"ℹ️ <b>Example:</b>\n"
                                 f"<b>Link before:</b> {longUrl}\n"
-                                f"<b>Stripped link:</b> {stripUrl(longUrl)}\n"
-                                f"<b>Shorted link:</b> {shortUrl(longUrl)}\n\n"
+                                f"<b>Stripped link:</b> {strippedUrl}\n"
+                                f"<b>Shorted link:</b> {shortedUrl}\n\n"
                                 f"<i>Hint: you can also just send me a link here and I will short it for you!</i>"
                                 f"", parse_mode="HTML", disable_web_page_preview=True)
 
 
 def query(msg):
     queryId, chatId, queryString = glance(msg, flavor='inline_query')
-    if queryString.startswith("http://www.amazon.") or queryString.startswith("https://www.amazon.") or \
-        queryString.startswith("http://amazon.") or queryString.startswith("https://amazon.") or \
-        queryString.startswith("www.amazon.") or queryString.startswith("amazon."):
-
-        amzSha256 = sha256((queryString + "amz").encode()).hexdigest()
-        bitSha256 = sha256((queryString + "bit").encode()).hexdigest()
+    if isAmazonUrl(queryString):
+        amzSha256 = "amz" + sha256(queryString.encode()).hexdigest()
+        bitSha256 = "bit" + sha256(queryString.encode()).hexdigest()
+        strippedUrl = stripUrl(queryString)
+        shortedUrl = shortUrl(strippedUrl)
 
         results = [
             InlineQueryResultArticle(
                 id=bitSha256,
                 title="Shorted URL",
                 input_message_content=InputTextMessageContent(
-                    message_text=shortUrl(queryString), disable_web_page_preview=True),
+                    message_text=shortedUrl, disable_web_page_preview=True),
                 description="Short link with bit.ly",
-                thumb_url="https://i.imgur.com/EOUlbSz.jpg"
+                thumb_url="https://i.imgur.com/UXDqKay.jpg"
             ),
             InlineQueryResultArticle(
                 id=amzSha256,
                 title="Stripped URL",
                 input_message_content=InputTextMessageContent(
-                    message_text=stripUrl(queryString), disable_web_page_preview=True),
-                description="Original amazon link w/o tags",
-                thumb_url="https://i.imgur.com/Ki8d6Mv.jpg"
+                    message_text=strippedUrl, disable_web_page_preview=True),
+                description="Original amazon link without extra tags",
+                thumb_url="https://i.imgur.com/7eAooJr.jpg"
             )
         ]
         bot.answerInlineQuery(queryId, results, cache_time=3600, is_personal=False)
@@ -129,7 +169,7 @@ def query(msg):
             title="Invalid link",
             input_message_content=InputTextMessageContent(
                 message_text=queryString, disable_web_page_preview=True),
-            description="Type an Amazon link to short it (tap to send anyway)",
+            description="Invalid link. Type an Amazon link to short it (or tap to send anyway)",
             thumb_url="https://i.imgur.com/Ki8d6Mv.jpg"
             )]
         bot.answerInlineQuery(queryId, results, cache_time=3600, is_personal=False)
