@@ -116,7 +116,7 @@ def reply(msg):
         text = ""
 
     if isAmazonUrl(text):
-        bot.sendMessage(chatId, shortUrl(text), disable_web_page_preview=True)
+        bot.sendMessage(chatId, shortUrl(stripUrl(text)), disable_web_page_preview=True)
 
     else:
         longUrl = settings['exampleStartLink']
@@ -136,8 +136,8 @@ def reply(msg):
 def query(msg):
     queryId, chatId, queryString = glance(msg, flavor='inline_query')
     if isAmazonUrl(queryString):
-        amzSha256 = "amz" + sha256(queryString.encode()).hexdigest()
-        bitSha256 = "bit" + sha256(queryString.encode()).hexdigest()
+        amzSha256 = sha256(("amz" + queryString).encode()).hexdigest()
+        bitSha256 = sha256(("bit" + queryString).encode()).hexdigest()
         strippedUrl = stripUrl(queryString)
         shortedUrl = shortUrl(strippedUrl)
 
