@@ -33,8 +33,8 @@ def expandUrl(url: str):
 
 def stripUrl(url: str):
     # Extract full link
-    if "amzn.to" in url:
-        url = expandUrl(url)
+    if "amzn.to/" in url:
+        url = expandUrl(url.replace("http://", "").replace("https://", ""))
 
     # Remove extra tags
     tags = ["ref", "dchild", "keywords", "qid", "sr", "tag"]
@@ -170,7 +170,7 @@ def query(msg):
             input_message_content=InputTextMessageContent(
                 message_text=queryString, disable_web_page_preview=True),
             description="Invalid link. Type an Amazon link to short it (or tap to send anyway)",
-            thumb_url="https://i.imgur.com/Ki8d6Mv.jpg"
+            thumb_url="https://i.imgur.com/7eAooJr.jpg"
             )]
         bot.answerInlineQuery(queryId, results, cache_time=3600, is_personal=False)
 
