@@ -1,6 +1,6 @@
 from time import sleep
-from telepot import Bot, glance
-from telepot.namedtuple import InlineQueryResultArticle, InputTextMessageContent
+from telepotpro import Bot, glance
+from telepotpro.namedtuple import InlineQueryResultArticle, InputTextMessageContent
 from threading import Thread
 from json import load as jsload
 from os.path import abspath, dirname, join
