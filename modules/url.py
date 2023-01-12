@@ -3,8 +3,6 @@ from urllib.parse import urlencode, urlparse, parse_qs
 
 class URL:
     def __init__(self, url: str):
-        if ("https://" not in url) and ("http://" not in url):
-            url = "http://" + url
         self.url = url
 
     @property
@@ -37,12 +35,12 @@ class URL:
         self.url = u.geturl()
 
     def clean(self):
-        tags = ["ref", "tag", "linkId", "keywords", "qid", "s", "ascsubtag"]
+        tags = ["ref", "tag", "linkId", "keywords", "qid", "s", "ascsubtag", "dchild", "sr"]
         self.removeTags(tags)
 
     def applyReferral(self, referral: str):
         self.clean()
-        separator = "&" if "?" in self.url > 0 else "?"
+        separator = "&" if "?" in self.url else "?"
         self.url += f"{separator}tag={referral}"
 
     def sha256(self) -> str:

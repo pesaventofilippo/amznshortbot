@@ -8,6 +8,8 @@ class BitlyApi:
         self._baseurl = "https://api-ssl.bitly.com/v4"
 
     def shortUrl(self, url: URL) -> URL:
+        if ("https://" not in url.url) and ("http://" not in url.url):
+            url.url = "http://" + url.url
         header = {
             "Authorization": self._apikey,
             "Content-Type": "application/json"
@@ -23,6 +25,8 @@ class BitlyApi:
         return short
 
     def expandUrl(self, url: URL) -> URL:
+        if ("https://" not in url.url) and ("http://" not in url.url):
+            url.url = "http://" + url.url
         header = {
             "Authorization": self._apikey,
             "Content-Type": "application/json"
