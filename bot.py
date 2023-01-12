@@ -14,8 +14,7 @@ bot = Bot(settings["bot_token"])
 bitly = BitlyApi(settings["bitly_token"])
 
 
-def generateUrl(url: str) -> URL:
-    url = URL(url)
+def generateUrl(url: URL) -> URL:
     if url.isBitlyUrl:
         url = bitly.expandUrl(url)
 
@@ -36,13 +35,12 @@ def reply(msg):
 
     else:
         longUrl = URL(settings["exampleStartLink"])
-        shortUrl = generateUrl(longUrl)
         bot.sendMessage(chatId, f"<b>Hi!</b> 👋\n"
                                 f"You can use me in any chat to short Amazon URLs before sending them.\n"
                                 f"Just type @amznshortbot in the text field, followed by the URL you want to send!\n\n"
                                 f"ℹ️ <b>Example:</b>\n"
                                 f"<b>Link before:</b> {longUrl}\n"
-                                f"<b>Shorted link:</b> {shortUrl}\n\n"
+                                f"<b>Shorted link:</b> {generateUrl(longUrl)}\n\n"
                                 f"<i>Hint: you can also just send me a link here and I will short it for you!</i>"
                                 f"", parse_mode="HTML", disable_web_page_preview=True)
 
