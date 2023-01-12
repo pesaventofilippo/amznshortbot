@@ -1,5 +1,5 @@
 from telepotpro import Bot, glance
-from telepotpro.namedtuple import InlineQueryResultArticle, InputTextMessageContent
+from telepotpro.namedtuple import InlineQueryResultArticle, InputTextMessageContent, InlineKeyboardMarkup, InlineKeyboardButton
 from time import sleep
 from threading import Thread
 from json import load as jsload
@@ -34,15 +34,20 @@ def reply(msg):
         bot.sendMessage(chatId, shortUrl.url, disable_web_page_preview=True)
 
     else:
-        longUrl = URL(settings["exampleStartLink"])
+        longUrl = "https://www.amazon.com/Apple-MWP22AM-A-AirPods-Pro/dp/B07ZPC9QD4/ref=sr_1_41?dchild=1&keywords=product&qid=1598027938&sr=8-41&tag=revolutrewa03-21&ascsubtag=df64b4d88a084b80b0d083b1ce868ec7"
+        shortUrl = "amzn.to/3W6DyVO"
         bot.sendMessage(chatId, f"<b>Hi!</b> 👋\n"
                                 f"You can use me in any chat to short Amazon URLs before sending them.\n"
                                 f"Just type @amznshortbot in the text field, followed by the URL you want to send!\n\n"
                                 f"ℹ️ <b>Example:</b>\n"
                                 f"<b>Link before:</b> {longUrl}\n"
-                                f"<b>Shorted link:</b> {generateUrl(longUrl)}\n\n"
+                                f"<b>Shorted link:</b> {shortUrl}\n\n"
                                 f"<i>Hint: you can also just send me a link here and I will short it for you!</i>"
-                                f"", parse_mode="HTML", disable_web_page_preview=True)
+                                f"", parse_mode="HTML", disable_web_page_preview=True,
+                                reply_markup=InlineKeyboardMarkup(
+                                                inline_keyboard=[[
+                                                    InlineKeyboardButton(text="💬 Try me!", switch_inline_query="https://www.amazon.com/Apple-iPhone-128GB-Space-Black/dp/B0BN95FRW9")
+                                                ]]))
 
 
 def query(msg):
