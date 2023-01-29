@@ -6,15 +6,6 @@ class URL:
         self.url = url
 
     @property
-    def isBitlyUrl(self) -> bool:
-        prefixList = [
-            "http://amzn.to",
-            "https://amzn.to",
-            "amzn.to"
-        ]
-        return self.url.startswith(tuple(prefixList))
-
-    @property
     def isAmazonUrl(self) -> bool:
         prefixList = [
             "http://www.amazon.",
@@ -46,5 +37,5 @@ class URL:
     def sha256(self) -> str:
         return sha256(self.url.encode()).hexdigest()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.url

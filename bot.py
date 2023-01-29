@@ -1,6 +1,7 @@
 from telepotpro import Bot, glance
 from telepotpro.namedtuple import InlineQueryResultArticle, InputTextMessageContent, InlineKeyboardMarkup, InlineKeyboardButton
 from time import sleep
+from requests import get
 from threading import Thread
 from json import load as jsload
 from os.path import abspath, dirname, join
@@ -14,10 +15,14 @@ bot = Bot(settings["bot_token"])
 bitly = BitlyApi(settings["bitly_token"])
 
 
-def generateUrl(url: URL) -> URL:
-    if url.isBitlyUrl:
-        url = bitly.expandUrl(url)
+def expandUrl(url: URL) -> URL:
+    if not (url.url.startswith("http://") or url.url.startswith("https://")):
+        url.url = "http://" + url.url
+    req = get(url.url)
+    return URL(req.url)
 
+
+def generateUrl(url: URL) -> URL:
     if url.isAmazonUrl:
         url.applyReferral(settings["referral_code"])
 
@@ -29,47 +34,54 @@ def reply(msg):
     text = msg.get("text", "") or msg.get("caption", "")
     url = URL(text)
 
-    if url.isAmazonUrl or url.isBitlyUrl:
-        shortUrl = generateUrl(url)
-        bot.sendMessage(chatId, shortUrl.url, disable_web_page_preview=True)
+    try:
+        url_ex = expandUrl(url)
+        if url.isAmazonUrl:
+            shortUrl = generateUrl(url_ex)
+            bot.sendMessage(chatId, shortUrl.url, disable_web_page_preview=True)
+            return
+    except Exception:
+        pass
 
-    else:
-        longUrl = "https://www.amazon.com/Apple-MWP22AM-A-AirPods-Pro/dp/B07ZPC9QD4/ref=sr_1_41?dchild=1&keywords=product&qid=1598027938&sr=8-41&tag=revolutrewa03-21&ascsubtag=df64b4d88a084b80b0d083b1ce868ec7"
-        shortUrl = "amzn.to/3W6DyVO"
-        bot.sendMessage(chatId, f"<b>Hi!</b> 👋\n"
-                                f"You can use me in any chat to short Amazon URLs before sending them.\n"
-                                f"Just type @amznshortbot in the text field, followed by the URL you want to send!\n\n"
-                                f"ℹ️ <b>Example:</b>\n"
-                                f"<b>Link before:</b> {longUrl}\n"
-                                f"<b>Shorted link:</b> {shortUrl}\n\n"
-                                f"<i>Hint: you can also just send me a link here and I will short it for you!</i>"
-                                f"", parse_mode="HTML", disable_web_page_preview=True,
-                                reply_markup=InlineKeyboardMarkup(
-                                                inline_keyboard=[[
-                                                    InlineKeyboardButton(text="💬 Try me!", switch_inline_query="https://www.amazon.com/Apple-iPhone-128GB-Space-Black/dp/B0BN95FRW9")
-                                                ]]))
+    longUrl = "https://www.amazon.com/Apple-MWP22AM-A-AirPods-Pro/dp/B07ZPC9QD4/ref=sr_1_41?dchild=1&keywords=product&qid=1598027938&sr=8-41&tag=revolutrewa03-21&ascsubtag=df64b4d88a084b80b0d083b1ce868ec7"
+    bot.sendMessage(chatId, f"<b>Hi!</b> 👋\n"
+                            f"You can use me in any chat to short Amazon URLs before sending them.\n"
+                            f"Just type @amznshortbot in the text field, followed by the URL you want to send!\n\n"
+                            f"ℹ️ <b>Example:</b>\n"
+                            f"<b>Link before:</b> {longUrl}\n"
+                            f"<b>Shorted link:</b> amzn.to/3W6DyVO\n\n"
+                            f"<i>Hint: you can also just send me a link here and I will short it for you!</i>"
+                            f"", parse_mode="HTML", disable_web_page_preview=True,
+                            reply_markup=InlineKeyboardMarkup(
+                                            inline_keyboard=[[
+                                                InlineKeyboardButton(text="💬 Try me!", switch_inline_query="https://www.amazon.com/Apple-iPhone-128GB-Space-Black/dp/B0BN95FRW9")
+                                            ]]))
 
 
 def query(msg):
     queryId, chatId, queryString = glance(msg, flavor='inline_query')
     url = URL(queryString)
-    if url.isAmazonUrl or url.isBitlyUrl:
-        shortUrl = generateUrl(url)
-
-        results = [
-            InlineQueryResultArticle(
-                id=shortUrl.sha256(),
-                title="Send Shorted URL",
-                input_message_content=InputTextMessageContent(
-                    message_text=shortUrl.url, disable_web_page_preview=True),
-                description="Short link with bit.ly",
-                thumb_url="https://i.imgur.com/UXDqKay.jpg"
-            )
-        ]
-        bot.answerInlineQuery(queryId, results, cache_time=3600, is_personal=False)
+    try:
+        url_ex = expandUrl(url)
+        if url_ex.isAmazonUrl:
+            shortUrl = generateUrl(url_ex)
+            results = [
+                InlineQueryResultArticle(
+                    id=shortUrl.sha256(),
+                    title="Send Shorted URL",
+                    input_message_content=InputTextMessageContent(
+                        message_text=shortUrl.url, disable_web_page_preview=True),
+                    description="Short link with bit.ly",
+                    thumb_url="https://i.imgur.com/UXDqKay.jpg"
+                )
+            ]
+            bot.answerInlineQuery(queryId, results, cache_time=3600, is_personal=False)
+            return
+    except Exception:
+        pass
 
     # Invalid link
-    elif queryString.strip() != "":
+    if queryString.strip() != "":
         results = [InlineQueryResultArticle(
             id=url.sha256(),
             title="Invalid link",
