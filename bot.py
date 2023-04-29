@@ -1,4 +1,4 @@
-from telepotpro import Bot, glance
+from telepotpro import Bot, glance, api as tgapi
 from telepotpro.namedtuple import InlineQueryResultArticle, InputTextMessageContent, InlineKeyboardMarkup, InlineKeyboardButton
 from time import sleep
 from requests import get
@@ -10,6 +10,8 @@ from modules.url import URL
 
 with open(join(dirname(abspath(__file__)), "settings.json")) as settings_file:
     settings = jsload(settings_file)
+    if settings.get("api_server"):
+        tgapi.set_api_url(settings["api_server"])
 
 bot = Bot(settings["bot_token"])
 bitly = BitlyApi(settings["bitly_token"])
