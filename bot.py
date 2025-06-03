@@ -95,13 +95,12 @@ def query(msg):
 
 
 webhook = OrderedWebhook(bot, {'chat': reply, 'inline_query': query})
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['POST'])
 def pass_update():
     webhook.feed(request.data)
     return 'ok', 200
 
 
 if __name__ == "__main__":
-    bot.setWebhook(settings["webhook_url"])
     webhook.run_as_thread()
     app.run("127.0.0.1", port=settings["web_port"], debug=False)
